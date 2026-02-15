@@ -1,0 +1,46 @@
+npx create-next-app@latest ai-interview-platform `
+  --ts `
+  --tailwind `
+  --eslint `
+  --app `
+  --src-dir `
+  --import-alias "@/*"
+
+
+cd ai-interview-platform
+
+
+npm i -D prisma@^6 tsx
+npm i @prisma/client@^6 zod
+
+
+DATABASE_URL="mysql://root:1234@localhost:3306/ai_interview"
+
+
+npx prisma init
+
+
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+npx prisma migrate dev --name init
+
+
+npx tsx prisma/seed.ts
+
+
+Create Prisma singleton in src/lib/prisma.ts
+
+
+
+
+
+
