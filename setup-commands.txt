@@ -34,10 +34,20 @@ datasource db {
 npx prisma migrate dev --name init
 
 
-npx tsx prisma/seed.ts
-
+Hardcoded db seed: npx tsx prisma/seed.ts
 
 Create Prisma singleton in src/lib/prisma.ts
+
+Create cookie check middleware src/middleware.ts 
+
+(creates user + interview session) src/app/api/session/start/route.ts
+
+
+
+
+
+
+
 
 
 
