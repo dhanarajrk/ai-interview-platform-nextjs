@@ -38,7 +38,7 @@ Hardcoded db seed: npx tsx prisma/seed.ts
 
 Create Prisma singleton in src/lib/prisma.ts
 
-Create cookie check middleware src/middleware.ts 
+Create cookie check middleware src/proxy.ts (new name->proxy.ts   old name->middleware.ts functionality is same, diff is just the naming)
 
 (creates user + interview session) src/app/api/session/start/route.ts
 

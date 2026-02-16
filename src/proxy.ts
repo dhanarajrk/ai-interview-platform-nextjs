@@ -7,8 +7,8 @@ import { randomUUID } from "crypto";
 
 const COOKIE_NAME = "ai_uid";
 
-//func name must be "middleware" - its a fixed nextjs rule 
-export function middleware(req: NextRequest) {
+//func name must be "middleware"-old way , "proxy"-new way  - its a fixed nextjs rule 
+export function proxy(req: NextRequest) {
   const res = NextResponse.next();
 
   const existing = req.cookies.get(COOKIE_NAME)?.value;
