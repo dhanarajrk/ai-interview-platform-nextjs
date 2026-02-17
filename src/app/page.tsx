@@ -1,11 +1,14 @@
 "use client"; //converting to client component since we are using react hooks to interact 
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; //to redirect to another page
 
 const ROLES = ["Frontend Developer", "Backend Developer", "Full Stack Developer"] as const; //as const is set to make it read-only and also have exact element name
 const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
 
 export default function Home() {
+  const router = useRouter();
+
   //only accepts typeof above option arrays for type safety.   useState<(typeof WHICH_ARRAY)[indices]>("InitialValue")
   const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES[0]);
   const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>(DIFFICULTIES[0]);
@@ -14,16 +17,31 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  //Fake API mimic for testing UI states and loading purpose
+  //Start button sends roles and difficulty info to start session API endpoint
   async function start(){
     setError(""); //clearing any previous error
     setLoading(true); 
 
-    // Simulate an API call
-    setTimeout(() => {
+    try {
+      const res = await fetch("api/session/start", {
+        method: "POST",
+        headers: {"Content-Type" : "application/json" },
+        body: JSON.stringify({role, difficulty}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to start session");
+      }
+
+      router.push(`/session/${data.sessionId}`);  // Redirect to the session page after getting res.ok status 
+
+    } catch(e : any){ //error can be of any type 
+      setError(e?.message ?? "Something went wrong");
+    } finally {
       setLoading(false);
-      console.log("Starting session with:", { role, difficulty });
-    }, 2000);
+    }
   } 
 
   return (

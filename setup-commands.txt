@@ -42,6 +42,10 @@ Create cookie check middleware src/proxy.ts (new name->proxy.ts   old name->midd
 
 (creates user + interview session) src/app/api/session/start/route.ts
 
+Update src/app/page.tsx with actual POST method
+
+Create src/app/session/[id]/page.tsx to get redirected to this page after start session
+
 
 
 
