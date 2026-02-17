@@ -14,7 +14,8 @@ export function proxy(req: NextRequest) {
   const existing = req.cookies.get(COOKIE_NAME)?.value;
   if (!existing) {
     const uid = randomUUID(); // stable per browser
-    res.cookies.set(COOKIE_NAME, uid, {
+    //set cookie "ai_uid" : "123456f" as uid which will later use to create or check a user's uid is existed or not in api/session/start/route.ts
+    res.cookies.set(COOKIE_NAME, uid, { 
       httpOnly: true,        //JS in the browser cannot read it (security)
       sameSite: "lax",       //Sent on normal navigation, helps CSRF protection
       secure: process.env.NODE_ENV === "production", //Only over HTTPS in production
