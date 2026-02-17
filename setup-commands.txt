@@ -46,7 +46,10 @@ Update src/app/page.tsx with actual POST method
 
 Create src/app/session/[id]/page.tsx to get redirected to this page after start session
 
-Create src/app/api/session/[id]/question/route.ts api route to get 1 question for a session (this will be tiggered by src/app/session/[id]/page.tsx page)
+Create src/app/api/session/[id]/question/route.ts - GET API route to get 1 question for a session (this will be tiggered by src/app/session/[id]/page.tsx page)
+
+Create src/app/api/session/[id]/attempt/route.ts - POST API route to sumbit attempted answer (this will be tiggered by src/app/session/[id]/page.tsx page "Attempt Button")
+
 
 
 
