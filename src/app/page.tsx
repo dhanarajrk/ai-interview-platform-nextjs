@@ -1,5 +1,31 @@
+"use client"; //converting to client component since we are using react hooks to interact 
+
+import { useState } from "react";
+
+const ROLES = ["Frontend Developer", "Backend Developer", "Full Stack Developer"] as const; //as const is set to make it read-only and also have exact element name
+const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
 
 export default function Home() {
+  //only accepts typeof above option arrays for type safety.   useState<(typeof WHICH_ARRAY)[indices]>("InitialValue")
+  const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES[0]);
+  const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>(DIFFICULTIES[0]);
+
+  //loading and error states
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
+  //Fake API mimic for testing UI states and loading purpose
+  async function start(){
+    setError(""); //clearing any previous error
+    setLoading(true); 
+
+    // Simulate an API call
+    setTimeout(() => {
+      setLoading(false);
+      console.log("Starting session with:", { role, difficulty });
+    }, 2000);
+  } 
+
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
      <div className="w-full max-w-xl rounded-2xl border bg-white p-6 shadow-sm">
@@ -12,25 +38,44 @@ export default function Home() {
          {/* Role dropdown */}
          <label className="grid gap-2">
             <span className="text-sm font-medium">Role</span>
-            <select className="h-11 rounded-xl border px-3">
-              <option value="Frontend Developer">Frontend Developer</option>
-              <option value="Backend Developer">Backend Developer</option>
-              <option value="Full Stack Developer">Full Stack Developer</option>
+            <select className="h-11 rounded-xl border px-3"
+                    value={role}
+                    onChange={(e)=>setRole(e.target.value as any)}
+                    disabled={loading}> 
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </label>
 
           {/* Difficulty dropdown */}
           <label className="grid gap-2">
             <span className="text-sm font-medium">Difficulty</span>
-            <select className="h-11 rounded-xl border px-3">
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
+            <select className="h-11 rounded-xl border px-3"
+                    value={difficulty}
+                    onChange={(e)=>setDifficulty(e.target.value as any)}
+                    disabled={loading}>
+              {DIFFICULTIES.map((d)=>(
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
             </select>
           </label>
 
-          <button className="h-11 rounded-xl bg-black text-white">
-            Start Session
+          {/* Error message display */}
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+
+          <button className="h-11 rounded-xl bg-black text-white"
+                  onClick={start}
+                  disabled={loading}>
+            {loading ? "Starting..." : "Start Session"}
           </button>
 
           {/* Footer note */}
