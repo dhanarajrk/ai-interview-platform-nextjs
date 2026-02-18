@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { consumeDailySessionQuota } from "@/lib/quota";
 
 //zod is used to validate req body during runtime. (zod validates any data that comes from outside world like API req. But TypeScript cannot check outside world data content like res.json() format since it only checks on compile-time while zod check on run-time which is perfect for checking funcs like res.json() which executes on runtime)
 const BodySchema = z.object({
@@ -21,6 +22,18 @@ export async function POST(req: Request) {
   const parsed = BodySchema.safeParse(json); //zod safeParse() the received json data and Validate using BodySchema
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+
+  //Quota check for 3 sessions/day/user
+  const quota = await consumeDailySessionQuota(uid);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: "Daily quota reached (3 sessions/day). Try again tomorrow.",
+        quota: { used: quota.used, remaining: quota.remaining },
+      },
+      { status: 429 }
+    );
   }
 
   // ensure user exists, upsert means update if user exists otherwise create new user in db

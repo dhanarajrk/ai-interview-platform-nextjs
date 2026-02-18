@@ -59,6 +59,7 @@ Create redis client in src/lib/redis.ts
 
 Quota helper (3/day) using redis sin rc/lib/quota.ts
 
+Update file: src/app/api/session/start/route.ts  + Quota check
 
 
 
