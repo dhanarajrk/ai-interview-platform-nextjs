@@ -62,6 +62,14 @@ Quota helper (3/day) using redis sin rc/lib/quota.ts
 Update file: src/app/api/session/start/route.ts  + Quota check
 
 
+npm i @google/genai 
+npm i zod-to-json-schema 
+
+Create sha256 hashing util in src/lib/hash.ts
+
+
+
+
 
 
 
