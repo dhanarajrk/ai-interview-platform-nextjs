@@ -50,7 +50,7 @@ Create src/app/api/session/[id]/question/route.ts - GET API route to get 1 quest
 
 Create src/app/api/session/[id]/attempt/route.ts - POST API route to sumbit attempted answer (this will be tiggered by src/app/session/[id]/page.tsx page "Attempt Button")
 
-
+Update src/app/session/[id]/page.tsx page to handle interaction with get question route and attempt answer route
 
 
 
