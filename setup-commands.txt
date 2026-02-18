@@ -67,7 +67,7 @@ npm i zod-to-json-schema
 
 Create sha256 hashing util in src/lib/hash.ts
 
-
+npm install zod@3   ->Downgraded to zod@3 since there is safe problem with zodToJsonSchema(EvaluationSchema) coversion
 
 
 
