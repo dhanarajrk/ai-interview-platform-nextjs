@@ -53,6 +53,17 @@ Create src/app/api/session/[id]/attempt/route.ts - POST API route to sumbit atte
 Update src/app/session/[id]/page.tsx page to handle interaction with get question route and attempt answer route
 
 
+npm i @upstash/redis
+
+Create redis client in src/lib/redis.ts
+
+Quota helper (3/day) using redis sin rc/lib/quota.ts
+
+
+
+
+
+
 
 
 
