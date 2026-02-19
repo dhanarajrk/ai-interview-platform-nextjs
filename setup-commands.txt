@@ -73,6 +73,8 @@ Create Gemini to evaluate question+answer in src/lib/gemini.ts
 
 To Set or Retrieve gemini Evaluated Answer stored in Redis Cache with hashed key in src/lib/evalCache.ts
 
+Update Session Page to load the evaluation result in src\app\session\[id]\page.tsx 
+
 
 
 

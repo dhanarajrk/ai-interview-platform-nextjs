@@ -24,6 +24,9 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState<string>("");
 
+  const [evaluation, setEvaluation] = useState<any>(null);
+  const [cacheHit, setCacheHit] = useState<boolean | null>(null);
+
   const canSubmit = useMemo(() => answer.trim().length >= 3 && !!question, [answer, question]); //canSubmit=true only when answeris longer than 3 chars and question does exist
 
   //to load respective question once session page loads, this will trigger get question route
@@ -60,6 +63,8 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     setSubmitMsg("");
 
     try {
+      setEvaluation(null);
+      setCacheHit(null);
       const res = await fetch(`/api/session/${sessionId}/attempt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,8 +74,11 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to submit answer");
 
-      setSubmitMsg("Answer attempt saved successfully");
-    } catch (e: any) {
+      setCacheHit(Boolean(data.cacheHit));
+      setEvaluation(data.evaluation);
+      setSubmitMsg(data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) -cache missed");
+    }
+    catch (e: any) {
       setSubmitMsg(`Error: ${e?.message ?? "Something went wrong"}`);
     } finally {
       setSubmitting(false);
@@ -135,6 +143,24 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
               {submitMsg}
             </div>
           ) : null}
+
+          {evaluation ? (
+            <div className="mt-3 rounded-xl border bg-neutral-50 p-4">
+              <div className="text-sm font-bold text-black">Evaluation</div>
+              <div className="mt-2 text-sm text-green-600">
+                <div><span className="font-medium">Score:</span> {evaluation.score}/10</div>
+                <div className="mt-2"><span className="font-medium">Feedback:</span> {evaluation.feedback}</div>
+                <div className="mt-2"><span className="font-medium">Ideal Answer:</span> {evaluation.idealAnswer}</div>
+                <div className="mt-2"><span className="font-medium">Tags:</span> {Array.isArray(evaluation.tags) ? evaluation.tags.join(", ") : ""}</div>
+                {cacheHit !== null ? (
+                  <div className="mt-2 text-xs text-neutral-600">
+                    Cache: {cacheHit ? "HIT" : "MISS"}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          
         </div>
       </div>
     </main>
