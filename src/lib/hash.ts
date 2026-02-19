@@ -1,3 +1,5 @@
+//To generate sha256 algo hash with given input string
+
 import { createHash } from "crypto";
 
 export function sha256(input: string) {

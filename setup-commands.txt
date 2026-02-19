@@ -69,6 +69,16 @@ Create sha256 hashing util in src/lib/hash.ts
 
 npm install zod@3   ->Downgraded to zod@3 since there is safe problem with zodToJsonSchema(EvaluationSchema) coversion
 
+Create Gemini to evaluate question+answer in src/lib/gemini.ts
+
+To Set or Retrieve gemini Evaluated Answer stored in Redis Cache with hashed key in src/lib/evalCache.ts
+
+
+
+
+
+
+
 
 
 

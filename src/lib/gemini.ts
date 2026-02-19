@@ -1,3 +1,5 @@
+//To Generate Structed Evaluation by Gemini
+
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
