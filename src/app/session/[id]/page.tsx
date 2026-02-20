@@ -27,13 +27,17 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   const [evaluation, setEvaluation] = useState<any>(null);
   const [cacheHit, setCacheHit] = useState<boolean | null>(null);
 
-  const canSubmit = useMemo(() => answer.trim().length >= 3 && !!question, [answer, question]); //canSubmit=true only when answeris longer than 3 chars and question does exist
+  const [meta, setMeta] = useState<any>(null);
+  const [ending, setEnding] = useState(false);
 
-  //to load respective question once session page loads, this will trigger get question route
+
+  const canSubmit = useMemo(() => answer.trim().length >= 3 && !!question && meta?.status !== "ENDED", [answer, question, meta]); //canSubmit=true only when answeris longer than 3 chars and question does exist and when session is not yet ended
+
+  //to load respective question + sessuib meta data once session page loads, this will trigger get question route
   useEffect(() => {
     let cancelled = false; //flag to track whether this effect has been abandoned. for safety purpose just in case sessionId got changed during fetching process the cleanup function will set cancelled=true
 
-    async function load() {
+    async function loadQuestion() {
       setLoadingQ(true);
       setQError("");
       setSubmitMsg("");
@@ -49,12 +53,25 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
       }
     }
 
-    load();
+    async function loadMeta() {
+      try {
+        const res = await fetch(`/api/session/${sessionId}/meta`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load session meta");
+        if (!cancelled) setMeta(data.session);
+      } catch {
+
+      }
+    }
+
+    loadQuestion();
+    loadMeta();
 
     return () => {
       cancelled = true;
     };
   }, [sessionId]);
+
 
   //submit attempt func triggers attempt POST api
   async function submit() {
@@ -85,14 +102,50 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     }
   }
 
+  //End Session functon
+  async function endSession() {
+    setEnding(true);
+    try {
+      const res = await fetch(`/api/session/${sessionId}/end`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to end session");
+      setMeta((m: any) => (m ? { ...m, status: "ENDED" } : m)); //state update meta status:"ENDED" if the state was not null meaning loadMeta() fetched meta data and was stored as meta state, otherwise loadMeta() was not successful, meta state will be null so End session must return null m as it is
+    } catch (e: any) {
+      setSubmitMsg(`Error: ${e?.message ?? "Failed to end session"}`);
+    } finally {
+      setEnding(false);
+    }
+  }
+
+
 
   return (
     <main className="min-h-screen p-6">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border bg-white p-6 shadow-sm">
+        
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-black">Interview Session</h1>
             <p className="mt-1 text-sm text-neutral-600">Session ID: {sessionId}</p>
+            {meta ? (
+              <p className="mt-1 text-xs text-neutral-500">
+                {meta.role} • {meta.difficulty} • Status:{" "}
+                <span className="font-medium">{meta.status}</span>
+              </p>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <a href="/history" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+              History
+            </a>
+            <button
+              onClick={endSession}
+              disabled={ending || meta?.status === "ENDED"}
+              className="rounded-xl bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
+            >
+              {meta?.status === "ENDED" ? "Ended" : ending ? "Ending..." : "End Session"}
+            </button>
           </div>
         </div>
 
@@ -122,11 +175,11 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
           <label className="grid gap-2">
             <span className="text-sm text-gray-700 font-medium">Your answer</span>
             <textarea
-              className="min-h-35 rounded-xl border p-3 text-gray-400"
+              className={`min-h-35 rounded-xl border p-3 ${answer ? "text-gray-900" : "text-gray-400"}`}
               placeholder="Type your answer here..."
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              disabled={!question || submitting}
+              disabled={!question || submitting || meta?.status === "ENDED"}
             />
           </label>
 
@@ -160,7 +213,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
           ) : null}
-          
+
         </div>
       </div>
     </main>
