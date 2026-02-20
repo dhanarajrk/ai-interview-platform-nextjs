@@ -76,6 +76,7 @@ To Set or Retrieve gemini Evaluated Answer stored in Redis Cache with hashed key
 Update Session Page to load the evaluation result in src\app\session\[id]\page.tsx 
 
 
+Create End session API in src/app/api/session/[id]/end/route.ts
 
 
 
