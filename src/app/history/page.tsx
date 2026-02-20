@@ -34,7 +34,7 @@ export default async function HistoryPage() {
             <div className="mx-auto w-full max-w-3xl">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">History</h1>
-                    <a className="rounded-xl border px-3 py-2 text-sm hover:bg-neutral-50" href="/">
+                    <a className="rounded-xl border px-3 py-2 text-sm hover:bg-neutral-700" href="/">
                         New Session
                     </a>
                 </div>
@@ -75,7 +75,7 @@ export default async function HistoryPage() {
                                         </div>
                                     ) : (
                                         s.attempts.map((a) => (
-                                            <div key={a.id} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                                            <div key={a.id} className="rounded-xl border border-neutral-200 bg-gray-100 p-4 shadow-sm">
                                                 <div className="text-sm font-medium text-neutral-900">Q: {a.question.prompt}</div>
                                                 <div className="mt-2 text-sm">
                                                     <span className="font-medium text-neutral-900">Answer:</span>{" "}
