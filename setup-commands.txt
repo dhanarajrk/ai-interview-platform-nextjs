@@ -78,9 +78,14 @@ Update Session Page to load the evaluation result in src\app\session\[id]\page.t
 
 Create End session API in src/app/api/session/[id]/end/route.ts
 
+Create History Page
+
+Create Analytic Page 
 
 
+Create tiny sleep helper(global setTimout) to prevent Submit spam src/lib/sleep.ts
 
+Redis lock helper to identify and lock submit req if current req lockkey name was already requested for submit button src/lib/redisLock.ts
 
 
 
