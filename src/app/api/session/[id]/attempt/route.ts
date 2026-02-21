@@ -7,11 +7,32 @@ import { z } from "zod";
 import { sha256 } from "@/lib/hash";
 import { evaluateAnswer, PROMPT_VERSION } from "@/lib/gemini";
 import { getCachedEval, setCachedEval } from "@/lib/evalCache";
+import { acquireLock, releaseLock } from "@/lib/redisLock";
+import { sleep } from "@/lib/sleep";
 
 const BodySchema = z.object({
   questionId: z.string().min(5),
   answerText: z.string().min(3).max(8000),
 });
+
+//function to retry evaluation with 300ms sleep delay each try
+async function evaluateWithRetry(input: Parameters<typeof evaluateAnswer>[0]) { //Parameters<typeof evaluateAnswer>[0] means extracting the type defined as props inside evaluateAnswer() func so dont we dont have to re write the same type defining again. Instead we extract as tuple using [ {typeof evaluateAnswerprops} ] and [0] is where it is contained
+  // minimal retry: 2 tries
+  let lastErr: any = null;
+
+  for (let i = 0; i < 2; i++) {
+    try {
+      return await evaluateAnswer(input);
+    } catch (e) {
+      lastErr = e;
+      // small backoff
+      if (i === 0) await sleep(300);
+    }
+  }
+
+  throw lastErr ?? new Error("Evaluation failed");
+}
+
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: sessionId } = await params;
@@ -41,54 +62,76 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
   if (!q) return NextResponse.json({ error: "Question not found" }, { status: 404 });
 
-  // Create/Record the attempt in db to have attempt history
-  const attempt = await prisma.attempt.create({
-    data: {
-      sessionId,
-      questionId: q.id,
-      answerText: parsed.data.answerText,
-    },
-    select: { id: true, createdAt: true },
-  });
-
-  // Cache hash (same question+answer+prompt version => same evaluation) this will avoid repeated gemini evaluation if same question and answer was already in redis cache
-  const evalHash = sha256(`${PROMPT_VERSION}|${parsed.data.questionId}|${parsed.data.answerText}`);
-
-  // Check Redis cache
-  const cached = await getCachedEval(evalHash); //will get data object or NULL 
-
-  let evaluation = cached;
-  let cacheHit = true; //will become false if evaluation, i mean cached data object is NULL
-
-  if (!evaluation) { //if cached missed then, send to gemini.ts to generate evaluation an also store evaluated using setCachedEval() in evalCache.ts
-    cacheHit = false;
-    evaluation = await evaluateAnswer({
-      role: session.role,
-      difficulty: session.difficulty,
-      questionPrompt: q.prompt,
-      answerText: parsed.data.answerText,
-    });
-    await setCachedEval(evalHash, evaluation);
+  // Acquire lock from redis (prevents double-submit / concurrent evaluation)
+  const lockName = `attempt:${uid}:${sessionId}`;
+  const gotLock = await acquireLock(lockName, 30); // TTL 30s safety 
+  if (!gotLock) {
+    return NextResponse.json(
+      { error: "Another submission is in progress. Please wait." },
+      { status: 429 }
+    );
   }
 
-  // Record the evaluation into the attempt record
-  await prisma.attempt.update({
-    where: { id: attempt.id },
-    data: {
-      evalHash,
-      score: evaluation.score,
-      feedback: evaluation.feedback,
-      idealAnswer: evaluation.idealAnswer,
-      tags: evaluation.tags,
-    },
-  });
+  try {
+    // Create/Record the attempt in db to have attempt history
+    const attempt = await prisma.attempt.create({
+      data: {
+        sessionId,
+        questionId: q.id,
+        answerText: parsed.data.answerText,
+      },
+      select: { id: true, createdAt: true },
+    });
 
-  //return evaluated info to show in src/app/session/[id]/page.tsx
-  return NextResponse.json({ 
-    attemptId: attempt.id, 
-    createdAt: attempt.createdAt,
-    cacheHit,
-    evaluation });
+    // Cache hash (same question+answer+prompt version => same evaluation) this will avoid repeated gemini evaluation if same question and answer was already in redis cache
+    const evalHash = sha256(`${PROMPT_VERSION}|${parsed.data.questionId}|${parsed.data.answerText}`);
+
+    // Check Redis cache
+    const cached = await getCachedEval(evalHash); //will get data object or NULL 
+
+    let evaluation = cached;
+    let cacheHit = true; //will become false if evaluation, i mean cached data object is NULL
+
+    if (!evaluation) { //if cached missed then, send to gemini.ts to generate evaluation an also store evaluated using setCachedEval() in evalCache.ts
+      cacheHit = false;
+      evaluation = await evaluateWithRetry({
+        role: session.role,
+        difficulty: session.difficulty,
+        questionPrompt: q.prompt,
+        answerText: parsed.data.answerText,
+      });
+      await setCachedEval(evalHash, evaluation); //store new evaluation is Redis cache
+    }
+
+    // Record the evaluation into the attempt record
+    await prisma.attempt.update({
+      where: { id: attempt.id },
+      data: {
+        evalHash,
+        score: evaluation.score,
+        feedback: evaluation.feedback,
+        idealAnswer: evaluation.idealAnswer,
+        tags: evaluation.tags,
+      },
+    });
+
+    //return evaluated info to show in src/app/session/[id]/page.tsx
+    return NextResponse.json({
+      attemptId: attempt.id,
+      createdAt: attempt.createdAt,
+      cacheHit,
+      evaluation
+    });
+  }
+  catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to evaluate answer" },
+      { status: 502 }
+    );
+  } finally {
+    //always release lock after success or failed
+    await releaseLock(lockName);
+  }
 
 }
 

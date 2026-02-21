@@ -89,8 +89,7 @@ Redis lock helper to identify and lock submit req if current req lockkey name wa
 
 Update questions route for “No repeats” question picking (within a session): src/app/api/session/[id]/question/route.ts
 
-
-
+Update src/app/api/session/[id]/attempt/route.ts  - Add lock + retry to Attempt submission route
 
 
 
