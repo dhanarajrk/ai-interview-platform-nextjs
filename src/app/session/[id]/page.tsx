@@ -203,7 +203,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
             <button
               onClick={submit}
               disabled={!canSubmit || submitting || submitted}
-              className="flex-1 h-11 rounded-xl bg-black text-white disabled:opacity-60"
+              className="flex-1 h-11 rounded-xl bg-black hover:bg-neutral-700 text-white disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Submit Answer"}
             </button>
@@ -211,7 +211,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
             <button
               onClick={loadQuestion}
               disabled={!submitted || loadingQ || meta?.status === "ENDED"}
-              className="flex-1 h-11 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+              className="flex-1 h-11 rounded-xl bg-black hover:bg-neutral-700 text-white disabled:opacity-50"
             >
               Next Question
             </button>

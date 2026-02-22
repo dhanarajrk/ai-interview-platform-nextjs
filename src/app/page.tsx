@@ -46,7 +46,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-xl rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="w-full max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-gray-400">AI Interview Platform</h1>
         <p className="text-sm text-neutral-600 mt-3">
           Pick a role and difficulty level to start and interview session
