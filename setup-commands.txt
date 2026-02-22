@@ -91,6 +91,8 @@ Update questions route for “No repeats” question picking (within a session):
 
 Update src/app/api/session/[id]/attempt/route.ts  - Add lock + retry to Attempt submission route
 
+Update session/[id]/page.tsx to load next question manually and updated Question route to return Current Question no. and Total Questions
+
 
 
 
