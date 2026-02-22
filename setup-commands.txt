@@ -93,6 +93,36 @@ Update src/app/api/session/[id]/attempt/route.ts  - Add lock + retry to Attempt 
 
 Update session/[id]/page.tsx to load next question manually and updated Question route to return Current Question no. and Total Questions
 
+//DEPLOYMENT USING AWS SST:
+
+Create a User in IAM AWS username: ai-interview-platform-sst-deploy and "Attach policies directly" with AdministratorAccess box checked
+
+Clicked on username: ai-interview-platform-sst-deploy and on "Security credentials" tab, Click "Create access key",Select "Command Line Interface (CLI)", Click Next → Create access key and secret access key
+
+Installed “AWS CLI v2” from AWS (Windows installer)
+
+Check Powershell: aws --version
+
+Connect to created SST using powershell:  
+aws configure
+```
+It will prompt you for:
+```
+AWS Access Key ID:     → paste your Access Key ID
+AWS Secret Access Key: → paste your Secret Access Key
+Default region name:   → e.g. us-east-1
+Default output format: → just press Enter (json is fine)
+
+This saves my credentials to ~/.aws/credentials so SST and the AWS CLI can use them automatically.
+
+Verify it works: aws sts get-caller-identity
+
+On Project folder, install SST using these commands: npx sst@latest init
+                                                     npm install
+
+Find the "sst.config.ts" file in your project root. It was just created by SST. And update the config file to instruct SST about our app
+
+Then Deploy to AWS using this command: npx sst deploy --stage production
 
 
 
