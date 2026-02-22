@@ -33,43 +33,38 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
 
   const canSubmit = useMemo(() => answer.trim().length >= 3 && !!question && meta?.status !== "ENDED", [answer, question, meta]); //canSubmit=true only when answeris longer than 3 chars and question does exist and when session is not yet ended
 
-  //to load respective question + sessuib meta data once session page loads, this will trigger get question route
+  async function loadQuestion() {
+    setLoadingQ(true);
+    setQError("");
+    try {
+      const res = await fetch(`/api/session/${sessionId}/question`, { method: "GET" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to load question");
+      setQuestion(data.question);
+    } catch (e: any) {
+      setQError(e?.message ?? "Error");
+    } finally {
+      setLoadingQ(false);
+    }
+  }
+
+  async function loadMeta() {
+    try {
+      const res = await fetch(`/api/session/${sessionId}/meta`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to load session meta");
+      setMeta(data.session);
+    } catch {
+
+    }
+  }
+
+  //to load respective question + session meta data once session page loads, this will trigger get question route
   useEffect(() => {
-    let cancelled = false; //flag to track whether this effect has been abandoned. for safety purpose just in case sessionId got changed during fetching process the cleanup function will set cancelled=true
-
-    async function loadQuestion() {
-      setLoadingQ(true);
-      setQError("");
-      setSubmitMsg("");
-      try {
-        const res = await fetch(`/api/session/${sessionId}/question`, { method: "GET" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load question");
-        if (!cancelled) setQuestion(data.question);
-      } catch (e: any) {
-        if (!cancelled) setQError(e?.message ?? "Error");
-      } finally {
-        if (!cancelled) setLoadingQ(false);
-      }
-    }
-
-    async function loadMeta() {
-      try {
-        const res = await fetch(`/api/session/${sessionId}/meta`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load session meta");
-        if (!cancelled) setMeta(data.session);
-      } catch {
-
-      }
-    }
 
     loadQuestion();
     loadMeta();
 
-    return () => {
-      cancelled = true;
-    };
   }, [sessionId]);
 
 
@@ -94,6 +89,9 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
       setCacheHit(Boolean(data.cacheHit));
       setEvaluation(data.evaluation);
       setSubmitMsg(data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) -cache missed");
+
+      setAnswer("");
+      await loadQuestion(); //After successful submit, load next question
     }
     catch (e: any) {
       setSubmitMsg(`Error: ${e?.message ?? "Something went wrong"}`);
@@ -122,7 +120,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   return (
     <main className="min-h-screen p-6">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border bg-white p-6 shadow-sm">
-        
+
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-black">Interview Session</h1>
