@@ -30,17 +30,31 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   const [meta, setMeta] = useState<any>(null);
   const [ending, setEnding] = useState(false);
 
+  const [submitted, setSubmitted] = useState(false); // enables Next Question after submit
+  const [qIndex, setQIndex] = useState(0);           // Question number 
+  const [qTotal, setQTotal] = useState(0);           // Total questions for role+difficulty
+
 
   const canSubmit = useMemo(() => answer.trim().length >= 3 && !!question && meta?.status !== "ENDED", [answer, question, meta]); //canSubmit=true only when answeris longer than 3 chars and question does exist and when session is not yet ended
 
   async function loadQuestion() {
     setLoadingQ(true);
     setQError("");
+
+    //reset per-question UI (so old evaluation doesn't show on next question)
+    setEvaluation(null);
+    setCacheHit(null);
+    setSubmitMsg("");
+    setSubmitted(false);
+    setAnswer("");
+
     try {
       const res = await fetch(`/api/session/${sessionId}/question`, { method: "GET" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load question");
-      setQuestion(data.question);
+      setQuestion(data.question); //set current question
+      setQIndex(data.questionNumber ?? 0); //current question number
+      setQTotal(data.total ?? 0); //total questions
     } catch (e: any) {
       setQError(e?.message ?? "Error");
     } finally {
@@ -73,6 +87,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     if (!question) return;
     setSubmitting(true);
     setSubmitMsg("");
+    //states to disable Next until success
+    setSubmitted(false);
+    setEvaluation(null);
+    setCacheHit(null);
 
     try {
       setEvaluation(null);
@@ -89,9 +107,8 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
       setCacheHit(Boolean(data.cacheHit));
       setEvaluation(data.evaluation);
       setSubmitMsg(data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) -cache missed");
+      setSubmitted(true);
 
-      setAnswer("");
-      await loadQuestion(); //After successful submit, load next question
     }
     catch (e: any) {
       setSubmitMsg(`Error: ${e?.message ?? "Something went wrong"}`);
@@ -163,6 +180,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
             <div className="rounded-xl border bg-neutral-50 p-4">
               <div className="text-xs text-neutral-500">
                 {question.role} • {question.difficulty}
+                {qIndex && qTotal ? ` • Question ${qIndex}/${qTotal}` : ""}
               </div>
               <div className="mt-2 text-base font-medium text-neutral-900">{question.prompt}</div>
             </div>
@@ -177,17 +195,27 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
               placeholder="Type your answer here..."
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              disabled={!question || submitting || meta?.status === "ENDED"}
+              disabled={!question || submitting || meta?.status === "ENDED" ||submitted }
             />
           </label>
 
-          <button
-            onClick={submit}
-            disabled={!canSubmit || submitting}
-            className="h-11 rounded-xl bg-black text-white disabled:opacity-60"
-          >
-            {submitting ? "Submitting..." : "Submit Answer"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={submit}
+              disabled={!canSubmit || submitting || submitted}
+              className="flex-1 h-11 rounded-xl bg-black text-white disabled:opacity-60"
+            >
+              {submitting ? "Submitting..." : "Submit Answer"}
+            </button>
+
+            <button
+              onClick={loadQuestion}
+              disabled={!submitted || loadingQ || meta?.status === "ENDED"}
+              className="flex-1 h-11 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+            >
+              Next Question
+            </button>
+          </div>
 
           {submitMsg ? (
             <div className="rounded-xl border bg-white p-3 text-sm text-neutral-800">

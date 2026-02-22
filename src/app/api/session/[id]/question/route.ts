@@ -46,12 +46,38 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     orderBy: { createdAt: "asc" },
   });
 
+  //Attempted counts and Total questions to track curr question page
+  const attemptedCount = attemptedIds.length;
+
+  const total = await prisma.question.count({
+    where: { role: session.role, difficulty: session.difficulty },
+  });
+
+  // If role+difficulty has zero questions (seed missing), or session exhausted
   if (!q) {
+    if (total === 0) {
+      return NextResponse.json(
+        { error: "No questions exist for this role+difficulty. Run seed.", total, attemptedCount },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "No questions found for this role+difficulty. Run seed." },
+      {
+        error: "No more questions left for this role+difficulty in this session.",
+        total,
+        attemptedCount,
+      },
       { status: 404 }
     );
   }
 
-  return NextResponse.json({ question: q });
+  // next question number
+  const questionNumber = attemptedCount + 1;
+
+  return NextResponse.json({
+    question: q,
+    total,
+    questionNumber,
+  });
 }
