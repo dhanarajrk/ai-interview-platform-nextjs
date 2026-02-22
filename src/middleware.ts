@@ -3,17 +3,16 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { randomUUID } from "crypto";
 
 const COOKIE_NAME = "ai_uid";
 
 //func name must be "middleware"-old way , "proxy"-new way  - its a fixed nextjs rule 
-export function proxy(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   const existing = req.cookies.get(COOKIE_NAME)?.value;
   if (!existing) {
-    const uid = randomUUID(); // stable per browser
+    const uid = crypto.randomUUID(); // stable per browser
     //set cookie "ai_uid" : "123456f" as uid which will later use to create or check a user's uid is existed or not in api/session/start/route.ts
     res.cookies.set(COOKIE_NAME, uid, { 
       httpOnly: true,        //JS in the browser cannot read it (security)

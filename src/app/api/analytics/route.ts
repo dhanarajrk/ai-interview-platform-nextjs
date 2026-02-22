@@ -24,7 +24,7 @@ export async function GET() {
 
   // Compute avg per role
   const roleAverages = await Promise.all(
-    byRole.map(async (r) => {
+    byRole.map(async (r: any) => {
       const agg = await prisma.attempt.aggregate({
         where: {
           session: { userId: uid, role: r.role },
