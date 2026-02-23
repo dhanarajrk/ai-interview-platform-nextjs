@@ -124,9 +124,47 @@ Find the "sst.config.ts" file in your project root. It was just created by SST. 
 
 Then Deploy to AWS using this command: npx sst deploy --stage production
 
+Open tsconfig.json and find the "compilerOptions" then change to "strict": false
 
+Downgrade react: npm install react@18.3.1 react-dom@18.3.1 @types/react@18 @types/react-dom@18
+Downgrade nextJS: npm install next@15.1.0 eslint-config-next@15.1.0
 
+rename: proxy.ts -> middleware.ts
+delete {crypto} and directly write crypto.randomUUID();
 
+Remove-Item -Recurse -Force node_modules
+Remove-Item -Recurse -Force .next
+Remove-Item -Recurse -Force .open-next
+npm install
+npx prisma generate
+npx sst deploy --stage production
+
+I made the above changes due to SST version mismatch problem
+
+And another problem arises because mysql is localhost and doesn't work on AWS Lambda
+
+So create TiDB starter account
+Create Cluster with Connect type: Prisma
+Copy the generated TiDB DATABASE connection URL and edit <PASSWORD> with generated TiDB key
+Update DATABASE_URL in .env
+
+Run "npx prisma db push" to push local Schema to TiDB 
+
+Edit package.json to define prisma question seed script:
+"prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+
+Run "npx prisma db seed" to seed questions to TiDB online DB
+
+Create a safe JSON parser helper in src/lib/safeJson.ts
+
+Replaced .json() with safeJson() to handle plain texts error during production which .json() response can't read : src\app\session\[id]\page.tsx , src\app\api\sessiom\start\route.ts AND src\app\page.tsx 
+
+Added BinaryTargets in schema.prisma for both Windows Machine("native") and AWS Lambda Machine("rhel-openssl-3.0.x")
+
+npx prisma generate
+npx sst deploy --stage production
 
 
 

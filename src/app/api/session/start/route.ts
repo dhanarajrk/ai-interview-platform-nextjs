@@ -1,4 +1,3 @@
-// src/app/api/session/start/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
@@ -11,11 +10,25 @@ const BodySchema = z.object({
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
 });
 
+const COOKIE_NAME = "ai_uid";
+
 //POST REQ: To Create (User + Interview Session)
 export async function POST(req: Request) {
-  const uid = (await cookies()).get("ai_uid")?.value;
+  const cookieStore = await cookies();
+  let uid = cookieStore.get(COOKIE_NAME)?.value;
+
+  //Fallback: if middleware didn't set cookie(sometimes in production mode, middle might never run), so we create cookie manually using fallback
+  const res = NextResponse.next(); //NextResponse.next() provides .cookie.set() function for res
+
   if (!uid) {
-    return NextResponse.json({ error: "Missing user cookie" }, { status: 401 });
+    uid = crypto.randomUUID();
+    res.cookies.set(COOKIE_NAME, uid, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
   }
 
   const json = await req.json().catch(() => null); //intentionally return null instead of error cause zod Body.Schema parse will handle success or unsuccess later.
@@ -53,5 +66,15 @@ export async function POST(req: Request) {
     select: { id: true },
   });
 
-  return NextResponse.json({ sessionId: session.id });
+  // Production Update: Return JSON, and include cookies if we set them
+  const jsonRes = NextResponse.json({
+    sessionId: session.id,
+    quota: { used: quota.used, remaining: quota.remaining }, //small improvement: could show something like "2 of 3 sessions used today." But I haven't use it on frontend
+  });
+
+  // copy cookie from res to jsonRes if set (only when uid was missing)
+  const setCookie = res.headers.get("set-cookie");
+  if (setCookie) jsonRes.headers.set("set-cookie", setCookie); //we manually paste cookie on jsonRes.header because NextResponse.next() —> res doesn't carry your actual data like sessionId and quota 
+
+  return jsonRes; //The main idea is just to manually create cookie and return, just in case middleware was not run at Start of the page(due to weird cache in production env)
 }

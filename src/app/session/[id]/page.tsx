@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { use } from "react"; //since params is a Promise and this is client component, we cannot use async await in client component. We must use { use } from "react" and instead of await we type use(params);
+import { safeJson } from "@/lib/safeJson";
 
 type Question = {
   id: string;
@@ -50,11 +51,16 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
 
     try {
       const res = await fetch(`/api/session/${sessionId}/question`, { method: "GET" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to load question");
-      setQuestion(data.question); //set current question
-      setQIndex(data.questionNumber ?? 0); //current question number
-      setQTotal(data.total ?? 0); //total questions
+      // const data = await res.json();
+      // if (!res.ok) throw new Error(data?.error || "Failed to load question");
+      // setQuestion(data.question); //set current question
+      // setQIndex(data.questionNumber ?? 0); //current question number
+      // setQTotal(data.total ?? 0); //total questions
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.data?.error || parsed.text || "Failed to load question");
+      setQuestion(parsed.data.question);
+      setQIndex(parsed.data.questionNumber ?? 0);
+      setQTotal(parsed.data.total ?? 0);
     } catch (e: any) {
       setQError(e?.message ?? "Error");
     } finally {
@@ -65,9 +71,12 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   async function loadMeta() {
     try {
       const res = await fetch(`/api/session/${sessionId}/meta`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to load session meta");
-      setMeta(data.session);
+      // const data = await res.json();
+      // if (!res.ok) throw new Error(data?.error || "Failed to load session meta");
+      // setMeta(data.session);
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.data?.error || parsed.text || "Failed to load session meta");
+      setMeta(parsed.data.session);
     } catch {
 
     }
@@ -101,12 +110,19 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
         body: JSON.stringify({ questionId: question.id, answerText: answer }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to submit answer");
+      // const data = await res.json();
+      // if (!res.ok) throw new Error(data?.error || "Failed to submit answer");
 
-      setCacheHit(Boolean(data.cacheHit));
-      setEvaluation(data.evaluation);
-      setSubmitMsg(data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) -cache missed");
+      // setCacheHit(Boolean(data.cacheHit));
+      // setEvaluation(data.evaluation);
+      // setSubmitMsg(data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) -cache missed");
+
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.data?.error || parsed.text || "Failed to submit answer");
+
+      setCacheHit(Boolean(parsed.data.cacheHit));
+      setEvaluation(parsed.data.evaluation);
+      setSubmitMsg(parsed.data.cacheHit ? "Evaluated (cache hit)" : "Evaluated (fresh) - cache missed");
       setSubmitted(true);
 
     }
@@ -122,8 +138,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     setEnding(true);
     try {
       const res = await fetch(`/api/session/${sessionId}/end`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to end session");
+      // const data = await res.json();
+      // if (!res.ok) throw new Error(data?.error || "Failed to end session");
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.data?.error || parsed.text || "Failed to end session");
       setMeta((m: any) => (m ? { ...m, status: "ENDED" } : m)); //state update meta status:"ENDED" if the state was not null meaning loadMeta() fetched meta data and was stored as meta state, otherwise loadMeta() was not successful, meta state will be null so End session must return null m as it is
     } catch (e: any) {
       setSubmitMsg(`Error: ${e?.message ?? "Failed to end session"}`);

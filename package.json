@@ -8,6 +8,9 @@
     "lint": "eslint",
     "start": "next start"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@google/genai": "^1.41.0",
     "@prisma/client": "^6.19.2",

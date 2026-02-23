@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"] // "native" is for local Windows, and "rhel-openssl-3.0.x" is for linux used by AWS Lambda in production env
 }
 
 datasource db {

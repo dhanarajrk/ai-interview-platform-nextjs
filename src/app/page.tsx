@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation"; //to redirect to another page
+import { safeJson } from "@/lib/safeJson";
 
 const ROLES = ["Frontend Developer", "Backend Developer", "Full Stack Developer"] as const; //as const is set to make it read-only and also have exact element name
 const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
@@ -29,13 +30,22 @@ export default function Home() {
         body: JSON.stringify({ role, difficulty }),
       });
 
-      const data = await res.json();
+      /*const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data?.error || "Failed to start session");
       }
 
       router.push(`/session/${data.sessionId}`);  // Redirect to the session page after getting res.ok status 
+      */
+      
+      const parsed = await safeJson(res);
+
+      if (!parsed.ok) {
+        throw new Error(parsed.data?.error || parsed.text || "Failed to start session");
+      }
+
+      router.push(`/session/${parsed.data.sessionId}`); // Redirect to the session page after getting res.ok status  
 
     } catch (e: any) { //error can be of any type 
       setError(e?.message ?? "Something went wrong");
