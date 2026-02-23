@@ -33,10 +33,15 @@ export default async function HistoryPage() {
         <main className="min-h-screen p-6">
             <div className="mx-auto w-full max-w-3xl">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">History</h1>
-                    <a className="rounded-xl border px-3 py-2 text-sm hover:bg-neutral-700" href="/">
-                        New Session
-                    </a>
+                    <h1 className="text-xl font-semibold text-neutral-900">History</h1>
+                    <div className="flex gap-2">
+                        <a className="rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200" href="/analytics">
+                            Analytics
+                        </a>
+                        <a className="rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700" href="/">
+                            New Session
+                        </a>
+                    </div>
                 </div>
 
                 <div className="mt-4 grid gap-4">
@@ -59,13 +64,13 @@ export default async function HistoryPage() {
                                     </div>
 
                                     {s.status !== "ENDED" &&
-                                    (<a
-                                        className="rounded-xl border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                                        href={`/session/${s.id}`}
-                                    >
-                                        Open
-                                    </a>)}
-                                    
+                                        (<a
+                                            className="rounded-xl border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+                                            href={`/session/${s.id}`}
+                                        >
+                                            Open
+                                        </a>)}
+
                                 </div>
 
                                 <div className="mt-4 grid gap-3">
