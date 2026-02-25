@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🤖 AI Interview Platform
 
-## Getting Started
+🚀 **Live Demo:** https://d3gp0we9w2ehf7.cloudfront.net/
 
-First, run the development server:
+An AI-powered mock interview platform that generates technical interview questions and evaluates candidate answers using Google Gemini.  
+Deployed with a production-grade serverless architecture on AWS.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🎯 Role & Difficulty-based interview sessions
+- 🧠 AI-powered answer evaluation (Gemini API)
+- 📊 Structured feedback with:
+  - Score
+  - Detailed feedback
+  - Ideal answer
+  - Improvement tags
+- 🔁 3 sessions/day quota system (Redis TTL)
+- ⚡ Evaluation caching (SHA-256 based)
+- 🔒 Distributed locking to prevent duplicate submissions
+- 📈 Interview analytics tracking
+- 🗂️ Session + attempt history persistence
+- ☁️ Fully serverless AWS deployment
+- 🔄 CI/CD with GitHub Actions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🏗️ Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+### Frontend
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Backend
+- Next.js API Routes
+- Zod (runtime validation)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Database
+- MySQL (Local)
+- TiDB (Online)
+- Prisma ORM
 
-## Deploy on Vercel
+### Caching & Rate Limiting
+- Upstash Redis
+  - Daily quota (TTL-based)
+  - Evaluation caching
+  - Distributed locking to prevent race condition
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### AI Integration
+- Google Gemini API
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Cloud & Infrastructure
+- AWS Lambda (serverless compute)
+- AWS CloudFront (global CDN)
+- AWS S3 (static asset storage)
+- SST (Serverless Stack)
+- OpenNext (Next.js → Lambda adapter)
+
+### DevOps
+- GitHub Actions (CI/CD pipeline)
+- Automated production deployment to AWS
+
+---
+
+## 📊 Analytics
+
+- Tracks session usage
+- Tracks attempt counts per session
+- Daily quota monitoring
+- Evaluation cache hit optimization
+
+---
+
+## 🏗️ System Architecture
+User
+↓
+CloudFront (CDN)
+↓
+AWS Lambda (Next.js APIs) + S3 (static files)
+↓
+Prisma ORM
+↓
+MySQL Database
+↓
+Upstash Redis (Quota + Cache + Lock)
+↓
+Gemini API (AI Evaluation)
+
+---
+
+## 🔐 Key Engineering Decisions
+
+### 1️⃣ Evaluation Caching
+- SHA256(question + answer + promptVersion)
+- Prevents duplicate AI calls
+- Reduces latency & API cost
+
+### 2️⃣ Daily Quota System
+- 3 sessions per user/day
+- Implemented using Redis TTL keys
+
+### 3️⃣ Distributed Locking
+- Prevents race conditions during answer submission
+- Ensures single evaluation per attempt
+
+### 4️⃣ Serverless Deployment
+- Zero server management
+- Scalable Lambda functions
+- Global delivery via CloudFront CDN
+
+### 5️⃣ CI/CD Automation
+- GitHub Actions pipeline
+- Auto-deploys on push to main branch
+- Automated build + SST deployment
+
+---
