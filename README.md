@@ -74,20 +74,16 @@ Deployed with a production-grade serverless architecture on AWS.
 ---
 
 ## 🏗️ System Architecture
-User
-↓
-CloudFront (CDN)
-↓
-AWS Lambda (Next.js APIs) + S3 (static files)
-↓
-Prisma ORM
-↓
-MySQL Database
-↓
-Upstash Redis (Quota + Cache + Lock)
-↓
-Gemini API (AI Evaluation)
-
+```mermaid
+graph TD
+    A[User] --> B[CloudFront CDN]
+    B --> C[AWS Lambda - Next.js APIs]
+    B --> D[S3 - Static Files]
+    C --> E[Prisma ORM]
+    E --> F[MySQL Database]
+    F --> G[Upstash Redis - Quota / Cache / Lock]
+    G --> H[Gemini API - AI Evaluation]
+```
 ---
 
 ## 🔐 Key Engineering Decisions
