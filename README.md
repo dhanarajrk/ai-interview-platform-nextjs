@@ -183,7 +183,174 @@ graph TB
 
 ---
 
-## 📊 Complete User Flow
+## 📊 Complete Workflow Diagram
+
+```mermaid
+graph TB
+    subgraph user_step["👤 Step 1: User Interface"]
+        user_select["User selects:<br/>- Job Role<br/>- Difficulty Level<br/>(Easy/Medium/Hard)"]
+    end
+    
+    subgraph auth_step["🔐 Step 2: Authentication"]
+        cookie_gen["Generate/Get User ID<br/>(httpOnly Cookie)<br/>Expiry: 1 year"]
+    end
+    
+    subgraph quota_step["📊 Step 3: Quota Check"]
+        quota_redis["Query Redis:<br/>user:quota:{uid}:{date}"]
+        quota_decision{"Sessions Used<br/>< 3/day?"}
+        quota_allowed["✅ Allowed"]
+        quota_denied["❌ 429 Error"]
+    end
+    
+    subgraph session_step["📋 Step 4: Session Creation"]
+        session_create["Create InterviewSession<br/>- sessionId: CUID<br/>- role, difficulty<br/>- status: ACTIVE<br/>- startedAt: now()"]
+    end
+    
+    subgraph question_step["❓ Step 5: Question Loop"]
+        get_question["GET Random Question<br/>by role & difficulty<br/>from DB"]
+        display_q["Display Question<br/>to User"]
+        user_answers["User Submits Answer<br/>3-8000 characters"]
+    end
+    
+    subgraph eval_step["🤖 Step 6: Evaluation Pipeline"]
+        hash_gen["Generate Cache Key<br/>SHA256 hash of:<br/>role + question +<br/>answer + version"]
+        
+        cache_query["Query Redis Cache<br/>Key: evalHash"]
+        
+        cache_hit["✅ Cache HIT<br/>Return Cached<br/>Evaluation<br/>Response: 50ms"]
+        
+        cache_miss["❌ Cache MISS<br/>Call Gemini API"]
+        
+        gemini_call["Google Gemini API<br/>Evaluate Answer<br/>System: Strict evaluator<br/>User Prompt: Role +<br/>Difficulty + Question"]
+        
+        gemini_response["Gemini Returns:<br/>- Score: 0-10<br/>- Feedback<br/>- Ideal Answer<br/>- Tags<br/>Response: 2-5s"]
+        
+        cache_store["Store Result in Redis<br/>- Key: evalHash<br/>- Value: Evaluation JSON<br/>- TTL: 30 days"]
+    end
+    
+    subgraph db_step["🗄️ Step 7: Persistent Storage"]
+        db_insert["INSERT INTO Attempt<br/>- attemptId: CUID<br/>- sessionId<br/>- questionId<br/>- answerText<br/>- score, feedback<br/>- idealAnswer<br/>- tags<br/>- evalHash"]
+    end
+    
+    subgraph response_step["📤 Step 8: Response to User"]
+        disp_results["Display Evaluation:<br/>✓ Score<br/>✓ Detailed Feedback<br/>✓ Ideal Answer<br/>✓ Improvement Tags<br/>✓ Cache Status"]
+    end
+    
+    subgraph loop_step["🔄 Step 9: Continue or End?"]
+        user_choice{"More Questions?"}
+        loop_back["YES → Loop to Step 5"]
+        end_session["NO → End Session"]
+    end
+    
+    subgraph end_step["📈 Step 10: Session End"]
+        mark_ended["Update InterviewSession<br/>- status: ENDED<br/>- endedAt: now()"]
+        show_analytics["Display Analytics:<br/>- Total Attempts<br/>- Average Score<br/>- Session Duration<br/>- Topics Covered"]
+    end
+    
+    subgraph infra["☁️ Infrastructure"]
+        lambda_box["AWS Lambda"]
+        mysql_box["MySQL Database"]
+        redis_box["Upstash Redis"]
+        gemini_box["Gemini API"]
+        cf_box["CloudFront CDN"]
+    end
+    
+    user_select --> cookie_gen
+    cookie_gen --> quota_redis
+    quota_redis --> quota_decision
+    quota_decision -->|No| quota_denied
+    quota_decision -->|Yes| quota_allowed
+    quota_allowed --> session_create
+    session_create --> get_question
+    get_question --> display_q
+    display_q --> user_answers
+    user_answers --> hash_gen
+    hash_gen --> cache_query
+    cache_query --> cache_hit
+    cache_query --> cache_miss
+    cache_miss --> gemini_call
+    gemini_call --> gemini_response
+    cache_hit --> cache_store
+    gemini_response --> cache_store
+    cache_store --> db_insert
+    db_insert --> disp_results
+    disp_results --> response_step
+    user_choice -->|Yes| loop_back
+    user_choice -->|No| end_session
+    loop_back --> get_question
+    end_session --> mark_ended
+    mark_ended --> show_analytics
+    
+    lambda_box -.-> session_create
+    lambda_box -.-> get_question
+    lambda_box -.-> user_answers
+    redis_box -.-> cache_query
+    mysql_box -.-> db_insert
+    gemini_box -.-> gemini_call
+    cf_box -.-> user_select
+    
+    style user_step fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style auth_step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style quota_step fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style session_step fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style question_step fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style eval_step fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+    style db_step fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+    style response_step fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style loop_step fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
+    style end_step fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style infra fill:#eceff1,stroke:#455a64,stroke-width:2px
+    style quota_denied fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style cache_hit fill:#c8e6c9,stroke:#1b5e20,stroke-width:3px
+    style gemini_response fill:#b3e5fc,stroke:#01579b,stroke-width:2px
+```
+
+### Workflow Explanation
+
+**Step 1-2: User Entry**
+- User selects interview role and difficulty
+- System creates secure httpOnly cookie for tracking
+
+**Step 3: Rate Limiting (Redis)**
+- Checks daily quota in Redis with TTL-based counter
+- 3 sessions per user per day (auto-resets after 24 hours)
+- Returns 429 error if quota exceeded
+
+**Step 4: Session Creation (Database)**
+- Creates new `InterviewSession` record in MySQL
+- Assigns unique sessionId (CUID format)
+- Records start time and parameters
+
+**Step 5: Question Loop (Database)**
+- Fetches random question matching role & difficulty
+- Displays to user for answering
+
+**Step 6: Evaluation Pipeline (AI + Cache)**
+- **Smart Caching**: Generates SHA256 hash of (question + answer + version)
+- **Cache Hit** (ℹ️ 50ms): Returns previously cached evaluation
+- **Cache Miss** (ℹ️ 2-5s): Calls Gemini API for new evaluation
+- Scores 0-10, provides detailed feedback, ideal answer, and improvement tags
+
+**Step 7: Storage (Database)**
+- Stores attempt with score, feedback, and evaluation hash
+- Records cache status for analytics
+- Enables history and replay features
+
+**Step 8: Response**
+- Returns complete evaluation to user
+- Includes cache hit/miss indicator
+- Displays all feedback components
+
+**Step 9: Continue Loop**
+- User can answer more questions (loops back to Step 5)
+- Or end the session to see analytics
+
+**Step 10: Session End (Database + Analytics)**
+- Marks session as ENDED with timestamp
+- Displays analytics: total attempts, average score, topics covered
+- Data persisted for future review
+
+---
 
 **1. User starts interview session:**
 - Selects job role and difficulty level
