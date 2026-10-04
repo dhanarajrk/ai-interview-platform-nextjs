@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Platform - Workflow Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .export-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            color: #333;
+        }
+        
+        .export-info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .export-info p {
+            margin: 8px 0;
+            color: #666;
+        }
+        
+        .export-info code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .export-info {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AI Interview Platform</h1>
+        <p class="subtitle">Complete Workflow Diagram</p>
+        
+        <div class="mermaid">
+            graph TB
+                subgraph user["👤 User Interface"]
+                    start["1️⃣ Select Role & Difficulty<br/>(e.g., Backend Engineer, Hard)"]
+                end
+                
+                subgraph cdn["🌐 CDN Layer - CloudFront"]
+                    cf["CloudFront<br/>Global Distribution"]
+                end
+                
+                subgraph auth["🔐 Authentication"]
+                    cookie["User Cookie<br/>(httpOnly, 1 year expiry)"]
+                end
+                
+                subgraph quota["📊 Quota Management - Redis"]
+                    quotacheck["Check Daily Limit<br/>(3 sessions/day)<br/>TTL: 24 hours"]
+                end
+                
+                subgraph session["📋 Session Creation - Database"]
+                    newsession["Create InterviewSession<br/>- sessionId (CUID)<br/>- role, difficulty<br/>- startedAt: now()"]
+                end
+                
+                subgraph question_flow["❓ Question Loop"]
+                    getq["Fetch Random Question<br/>by role & difficulty"]
+                    display["Display Question<br/>to User"]
+                    answer["User Submits Answer<br/>(3-8000 characters)"]
+                end
+                
+                subgraph eval["🤖 AI Evaluation Pipeline"]
+                    hash["Generate Cache Key<br/>SHA256(role + question<br/>+ answer + version)"]
+                    
+                    subgraph cache_check["💾 Redis Cache Check"]
+                        cachehit["✓ Cache Hit!<br/>Return Cached Result<br/>Response: <50ms"]
+                        cachemiss["✗ Cache Miss<br/>Call Gemini API"]
+                    end
+                    
+                    gemini["Google Gemini API<br/>Evaluate Answer<br/>Return:<br/>- Score (0-10)<br/>- Feedback<br/>- Ideal Answer<br/>- Tags"]
+                    
+                    cachestore["Store in Redis<br/>Key: evalHash<br/>TTL: 30 days"]
+                end
+                
+                subgraph storage["🗄️ Persistent Storage - Database"]
+                    attemptdb["Create Attempt Record<br/>- attemptId (CUID)<br/>- sessionId<br/>- questionId<br/>- answerText<br/>- score<br/>- feedback<br/>- idealAnswer<br/>- evalHash"]
+                end
+                
+                subgraph response["📤 Response to User"]
+                    results["Display Results:<br/>✓ Score<br/>✓ Detailed Feedback<br/>✓ Ideal Answer<br/>✓ Improvement Tags"]
+                end
+                
+                subgraph loop["🔄 Continue?"]
+                    continue["MORE QUESTIONS?<br/>Yes → Loop back<br/>No → END SESSION"]
+                end
+                
+                subgraph analytics["📈 Session End"]
+                    enddb["Mark Session ENDED<br/>- endedAt: now()<br/>- status: ENDED"]
+                    analytics_show["Show Analytics<br/>Session Summary<br/>Total Attempts<br/>Average Score"]
+                end
+                
+                subgraph deploy["☁️ AWS Deployment"]
+                    lambda["AWS Lambda<br/>Serverless Compute"]
+                    s3["S3 Bucket<br/>Static Assets"]
+                    mysql["AWS RDS MySQL<br/>Production Database"]
+                    redis_ext["Upstash Redis<br/>Cloud Cache"]
+                end
+                
+                %% Main Flow
+                start --> cookie
+                cookie --> cf
+                cf --> lambda
+                
+                lambda --> quotacheck
+                quotacheck -->|Allowed| newsession
+                quotacheck -->|Quota Exceeded| quotaerr["❌ 429 Error<br/>Try Tomorrow"]
+                
+                newsession --> getq
+                
+                getq --> display
+                display --> answer
+                
+                answer --> hash
+                hash --> cachehit
+                cachehit --> cachestore
+                hash --> cachemiss
+                cachemiss --> gemini
+                gemini --> cachestore
+                
+                cachestore --> attemptdb
+                attemptdb --> results
+                results --> loop
+                
+                loop -->|Continue| getq
+                loop -->|End Session| enddb
+                
+                enddb --> analytics_show
+                
+                %% AWS Architecture
+                lambda --> mysql
+                lambda --> redis_ext
+                lambda --> s3
+                cf --> s3
+                
+                %% Styling
+                style start fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+                style cookie fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+                style cf fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+                style quotacheck fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+                style newsession fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+                style getq fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+                style display fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+                style answer fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+                style hash fill:#ede7f6,stroke:#512da8,stroke-width:2px
+                style cachehit fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+                style cachemiss fill:#ffccbc,stroke:#d84315,stroke-width:2px
+                style gemini fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
+                style cachestore fill:#ffccbc,stroke:#d84315,stroke-width:2px
+                style attemptdb fill:#f5f5f5,stroke:#424242,stroke-width:2px
+                style results fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+                style continue fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+                style enddb fill:#ffccbc,stroke:#d84315,stroke-width:2px
+                style analytics_show fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+                style quotaerr fill:#ffebee,stroke:#c62828,stroke-width:2px
+                style lambda fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+                style mysql fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+                style redis_ext fill:#fff3e0,stroke:#e65100,stroke-width:2px
+                style s3 fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+        </div>
+        
+        <div class="export-info">
+            <h3>📥 How to Export as PDF or Image</h3>
+            <p><strong>Option 1 - Browser Print to PDF (Recommended):</strong></p>
+            <p>Press <code>Ctrl+P</code> → Save as PDF → Choose your docs folder</p>
+            
+            <p><strong>Option 2 - Screenshot:</strong></p>
+            <p>Use your browser's screenshot tool or tools like Snagit/ShareX</p>
+            
+            <p><strong>Option 3 - Mermaid CLI (if installed):</strong></p>
+            <p><code>mmdc -i WORKFLOW_DIAGRAM.html -o workflow.png</code></p>
+            
+            <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccc; color: #999;">
+                <strong>Quick Legend:</strong><br>
+                🎯 Green = Success | 🔴 Red = Error | 🔵 Blue = API/Lambda | 💾 Cache Operations | 📊 Database Operations
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>
